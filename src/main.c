@@ -93,7 +93,8 @@ BT_GATT_SERVICE_DEFINE(
 ssize_t read_custom_characteristic(struct bt_conn *conn,
                                    const struct bt_gatt_attr *attr, void *buf,
                                    uint16_t len, uint16_t offset) {
-  return bt_gatt_attr_read(conn, attr, buf, len, offset, &custom_value,
+	LOG_WRN("We got a read!");
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, &custom_value,
                            sizeof(custom_value));
 }
 
@@ -120,7 +121,7 @@ int main(void) {
 
   // IF BLE ready advertise device and services
   // You can register callbacks to handle connections and notifications
-  err = bt_le_adv_start(BT_LE_ADV_CONN, advert, ARRAY_SIZE(advert), NULL, 0);
+  err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, advert, ARRAY_SIZE(advert), NULL, 0);
   if (err) {
     LOG_ERR("advertising failed to start 0x%02x",
             err); // bt_hci_err_to_str(err));
