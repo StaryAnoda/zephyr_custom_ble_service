@@ -1,8 +1,7 @@
 /*
- * Copyright (c) 2021 Nordic Semiconductor ASA
+ * Copyright (c) gaiaochos.com
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h> // for the service
@@ -12,7 +11,9 @@
 #include <zephyr/logging/log.h>
 
 
-// naive implementation for random number for sensor simulation 
+/* naive implementation for random number for sensor simulation 
+ * TODO since the NRF52840 has a temperature sensor, lets use that
+ */
 unsigned long long seed = 1;
 #define MODULUS    0x100000000ULL // 2^32
 #define MULTIPLIER 6364136223846793005ULL
@@ -24,13 +25,12 @@ static unsigned long generate_rnd_number(unsigned long long s) {
   return (unsigned long)(seed >> 16);
 }
 
-//End Sensor simulation 
+/*End Sensor simulation*/
 
 //Enable logs
 LOG_MODULE_REGISTER(custom_service_log);
 
-// using any online UUID generator service we generate UUIDs
-// encode array to little endian as used by BLE
+/*encode  UUID array to little endian as used by BLE*/
 #define BT_UUID_OUR_CUSTOM_SERVICE_VAL                                         \
   BT_UUID_128_ENCODE(0x49696277, 0xf2f0, 0x47c6, 0x8854, 0xe2dc31396481)
 
