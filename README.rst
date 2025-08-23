@@ -5,15 +5,16 @@ Bluetooth: Custom Peripheral Service
 Overview
 ********
 
-Similar to the :ref:`Peripheral <ble_peripheral>` sample, except that this
-application specifically exposes a custom GATT Service. Once a device
-connects it will be able to read values from the service.
+Implements a simplistic BLE peripheral Server.
+
+The application will currently use its internal temprature sensor to advertise an 
+enviromental sensing service with a Temprature Characteristic that we can consume on a client.
 
 
 Requirements
 ************
 
-* A board with BLE support
+* The NRF52840 Board
 * BLE Scanner APP
 
 Building and Running
