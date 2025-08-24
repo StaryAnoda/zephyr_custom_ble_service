@@ -16,4 +16,5 @@ ssize_t read_custom_characteristic(struct bt_conn *conn,
                                    // 1. Service offered
                                    uint16_t len, uint16_t offset);
 
+void ble_temp_read_thread(void *arg1, void *arg2, void *arg3); 
 #endif

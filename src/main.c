@@ -6,34 +6,31 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "app.h"
 #include "ble_service.h"
 #include "temperature.h"
 
 // Enable logs
 LOG_MODULE_REGISTER(custom_service_log);
 
-// global state
-float temp_float;
 
-// variable or buffer to hold temprature read
-double temparature_value = 0;
+K_MSGQ_DEFINE(tempmsgq, TEMP_MSG_SIZE, TEMPQSIZE, 2);
+K_THREAD_DEFINE(temp_thread_id, TEMPQSIZE, temp_sensor_thread, NULL, NULL, NULL, 5, 0, 0); 
+K_THREAD_DEFINE(ble_temp_thread_id, TEMPQSIZE, ble_temp_read_thread, NULL, NULL, NULL, 6, 0,0);
+
+
 
 int main(void) {
   /*Blocking bluetooth init*/
   ble_service_init();
 
   /*Bluetooth setup was a success do sensor now*/
-  const struct device *temp_sensor = sensor_temp_sensor_init();
-  if (temp_sensor == NULL) {
-    LOG_ERR("Sensor initialization failed");
-    return 1;
-  }
-
+  sensor_temp_sensor_init();
   LOG_WRN("Updating temp every 2000 MSEC");
 
+  /*Start OUR Producer and consumer threads*/
+    /*This becomes our idle loop*/
   while (1) {
-    temparature_value = fetch_temp(temp_sensor);
-    temp_float = (float)temparature_value;
     k_sleep(K_SECONDS(2));
   }
 }

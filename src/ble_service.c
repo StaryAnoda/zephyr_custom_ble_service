@@ -1,10 +1,14 @@
-#include "ble_service.h"
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(ble_module);
 
+#include "app.h"
+#include "ble_service.h"
+
+
 volatile bool ble_ready = false;
+float temp_float;
 
 /* Error checking function to make sure ble runs well.
  * Enables us to report on Bluetooth
@@ -69,4 +73,19 @@ void ble_service_init(void) {
   if (err) {
     LOG_ERR("advertising failed to start 0x%02x", err);
   }
+}
+
+
+/*BLE Threads*/
+
+/*Read Current Temp Thread*/
+void ble_temp_read_thread(void *arg1, void *arg2, void *arg3) {
+	struct current_temp_msg curr_temp; 
+
+	while(1) {
+		/*Try to read the queue until it has something*/
+		if (k_msgq_get(&tempmsgq, &curr_temp, K_FOREVER) == 0 ) {
+			temp_float = curr_temp.value;
+		}
+	}
 }
