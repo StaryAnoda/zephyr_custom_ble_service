@@ -10,6 +10,6 @@ struct current_temp_msg {
 #define TEMPQSIZE 	2
 #define TEMP_MSG_SIZE	sizeof(struct current_temp_msg)
 
-extern struct k_msgq tempmsgq;
+extern struct current_temp_msg curr_msg;
 
 #endif

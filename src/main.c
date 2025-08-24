@@ -13,10 +13,11 @@
 // Enable logs
 LOG_MODULE_REGISTER(custom_service_log);
 
+#define THREAD_STACK_SIZE 1024
 
 K_MSGQ_DEFINE(tempmsgq, TEMP_MSG_SIZE, TEMPQSIZE, 2);
-K_THREAD_DEFINE(temp_thread_id, TEMPQSIZE, temp_sensor_thread, NULL, NULL, NULL, 5, 0, 0); 
-K_THREAD_DEFINE(ble_temp_thread_id, TEMPQSIZE, ble_temp_read_thread, NULL, NULL, NULL, 6, 0,0);
+K_THREAD_DEFINE(temp_thread_id, THREAD_STACK_SIZE, temp_sensor_thread, NULL, NULL, NULL, 5, 0, 0); 
+K_THREAD_DEFINE(ble_temp_thread_id, THREAD_STACK_SIZE, ble_temp_read_thread, NULL, NULL, NULL, 6, 0,0);
 
 
 

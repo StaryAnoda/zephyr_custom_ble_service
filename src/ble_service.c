@@ -7,6 +7,8 @@ LOG_MODULE_REGISTER(ble_module);
 #include "ble_service.h"
 
 
+extern struct k_msgq tempmsgq;
+
 volatile bool ble_ready = false;
 float temp_float;
 
@@ -80,12 +82,10 @@ void ble_service_init(void) {
 
 /*Read Current Temp Thread*/
 void ble_temp_read_thread(void *arg1, void *arg2, void *arg3) {
-	struct current_temp_msg curr_temp; 
-
 	while(1) {
 		/*Try to read the queue until it has something*/
-		if (k_msgq_get(&tempmsgq, &curr_temp, K_FOREVER) == 0 ) {
-			temp_float = curr_temp.value;
+		if (k_msgq_get(&tempmsgq, &curr_msg, K_FOREVER) == 0 ) {
+			temp_float = curr_msg.value;
 		}
 	}
 }

@@ -8,7 +8,12 @@
 
 LOG_MODULE_REGISTER(sensor_module);
 
+extern struct k_msgq tempmsgq;
+
+struct current_temp_msg curr_msg;
+
 static const struct device *temp_sensor;
+
 
 void sensor_temp_sensor_init() { 
 	 temp_sensor = DEVICE_DT_GET_ANY(nordic_nrf_temp);
@@ -44,13 +49,12 @@ double fetch_temp(const struct device *sensor) {
 void temp_sensor_thread(void *arg1 , void *arg2, void *arg3) 
 {
 	while(1) {
-		struct current_temp_msg curr_message;
-
+		
 		float curr_temp = (float)fetch_temp(temp_sensor); 
-		curr_message.value  = curr_temp;
+		curr_msg.value  = curr_temp;
 
 		/*Push the work  into the queue*/
-		if ((k_msgq_put(&tempmsgq, &curr_message, K_NO_WAIT) != 0)) {
+		if (k_msgq_put(&tempmsgq, &curr_msg, K_NO_WAIT) != 0) {
 			//Queue is full here  drop the oldest 
 			k_msgq_purge(&tempmsgq);
 			k_msgq_put(&tempmsgq, &curr_message, K_NO_WAIT); 
