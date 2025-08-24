@@ -56,6 +56,7 @@ BT_GATT_SERVICE_DEFINE(
 ssize_t read_custom_characteristic(struct bt_conn *conn,
                                    const struct bt_gatt_attr *attr, void *buf,
                                    uint16_t len, uint16_t offset) {
+  LOG_WRN("Temp was read by Central\n");
   float *value = attr->user_data;
   return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(*value));
 }
@@ -87,5 +88,8 @@ void ble_temp_read_thread(void *arg1, void *arg2, void *arg3) {
 		if (k_msgq_get(&tempmsgq, &curr_msg, K_FOREVER) == 0 ) {
 			temp_float = curr_msg.value;
 		}
+
+		//Wait 10s 
+		k_sleep(K_SECONDS(5));
 	}
 }
