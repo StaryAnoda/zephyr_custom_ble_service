@@ -27,10 +27,11 @@ int main(void) {
 
   /*Bluetooth setup was a success do sensor now*/
   sensor_temp_sensor_init();
+
+
   LOG_WRN("Updating temp every 2000 MSEC");
 
-  /*Start OUR Producer and consumer threads*/
-    /*This becomes our idle loop*/
+  /*This becomes our idle loop*/
   while (1) {
     k_sleep(K_SECONDS(2));
   }

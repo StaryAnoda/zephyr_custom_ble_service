@@ -1,3 +1,4 @@
+#include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/logging/log.h>
@@ -70,9 +71,15 @@ void ble_service_init(void) {
     k_msleep(100);
   }
 
+  /*Low Power advertising params*/
+  struct bt_le_adv_param lp_adv_params = {
+	  .options = BT_LE_ADV_OPT_CONN,
+	  .interval_min = 1600, 
+	  .interval_max = 2000,
+  };
+
   /*When ready register callbacks to handle connections and notifications*/
-  err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, advert, ARRAY_SIZE(advert), NULL,
-                        0);
+  err = bt_le_adv_start(&lp_adv_params, advert, ARRAY_SIZE(advert), NULL, 0);
   if (err) {
     LOG_ERR("advertising failed to start 0x%02x", err);
   }
