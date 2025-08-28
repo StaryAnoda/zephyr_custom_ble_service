@@ -1,43 +1,73 @@
-#include  <zephyr/logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "audio_service.h"
 
-LOG_MODULE_REGISTER(sensor_module);
+LOG_MODULE_REGISTER(audio_module);
 
 K_MEM_SLAB_DEFINE_STATIC(mem_slab, BLOCK_SIZE, BLOCK_COUNT, 4);
 
 void *mem_block;
+size_t size;
 
+static const struct device *i2s_dev;
 
 void audio_service_init() {
-	const struct device *i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
-	struct i2s_config config;
-	size_t size;
-	int ret;
+  i2s_dev = DEVICE_DT_GET(DT_NODELABEL(i2s0));
+  struct i2s_config config;
+  int ret;
 
+  config.word_size = SAMPLE_BIT_WIDTH;
+  config.channels = CHANNELS;
+  config.format = I2S_FMT_DATA_FORMAT_I2S;
+  config.options = I2S_OPT_BIT_CLK_MASTER | I2S_OPT_FRAME_CLK_MASTER;
+  config.frame_clk_freq = SAMPLE_FREQUENCY;
+  config.mem_slab = &mem_slab;
+  config.block_size = BLOCK_SIZE;
+  config.timeout = TIMEOUT_MS;
 
-	config.word_size = SAMPLE_BIT_WIDTH;
-	config.channels = CHANNELS;
-	config.format = I2S_FMT_DATA_FORMAT_I2S;
-	config.options = I2S_OPT_BIT_CLK_MASTER | I2S_OPT_FRAME_CLK_MASTER;
-	config.frame_clk_freq = SAMPLE_FREQUENCY;
-	config.mem_slab = &mem_slab;
-	config.block_size = BLOCK_SIZE;
-	config.timeout = TIMEOUT_MS;
+  ret = i2s_configure(i2s_dev, I2S_DIR_RX, &config);
+  if (ret < 0) {
+    LOG_ERR("Failed to configure I2S RX: %d\n", ret);
+    return;
+  }
 
-	ret = i2s_configure(i2s_dev, I2S_DIR_RX, &config);
-	if (ret < 0) {
-		printf("Failed to configure I2S RX: %d\n", ret);
-		return 0;
-	}
-
-	if(!device_is_ready(i2s_dev)) {
-		printf("I2S device not ready\n");
-		return 0;
-	}
-
-
+  if (!device_is_ready(i2s_dev)) {
+    LOG_ERR("I2S device not ready\n");
+    return;
+  }
 }
-void audio_sense_thread(void *arg1 , void *arg2, void *arg3) {
-	LOG_WRN("Sense not implemented \n");
+
+void audio_sense_thread(void *arg1, void *arg2, void *arg3) {
+  int ret;
+
+  while (1) {
+    ret = i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_START);
+    if (ret < 0) {
+      LOG_ERR("Failed to start I2S RX: %d \n", ret);
+      return;
+    }
+
+    for (int i = 0; i < BLOCK_COUNT; i++) {
+      ret = i2s_read(i2s_dev, &mem_block, &size);
+      if (ret < 0) {
+        LOG_ERR("Failed to read I2S Data: %d \n", ret);
+	/*Should we continue if we fail to read*/
+        continue;
+      }
+
+      int32_t *samples = mem_block;
+      printf("Block %d  first 10 samples: \n", i);
+      for (int j = 0; j < 10 && j < (size / 4); j++) {
+        LOG_WRN("%d ", samples[j]);
+      }
+
+    }
+  
+    i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_STOP);
+
+    LOG_WRN("I2S RX stopped\n");
+
+    /*Wait 2 seconds then sense again*/
+    k_sleep(K_SECONDS(2));	
+  }
 }
