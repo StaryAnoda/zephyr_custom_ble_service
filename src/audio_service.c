@@ -6,9 +6,6 @@ LOG_MODULE_REGISTER(audio_module);
 
 K_MEM_SLAB_DEFINE_STATIC(mem_slab, BLOCK_SIZE, BLOCK_COUNT, 4);
 
-void *mem_block;
-size_t size;
-
 static const struct device *i2s_dev;
 
 void audio_service_init() {
@@ -17,7 +14,7 @@ void audio_service_init() {
   int ret;
 
   config.word_size = SAMPLE_BIT_WIDTH;
-  config.channels = CHANNELS;
+  config.channels = NUMBER_OF_CHANNELS;
   config.format = I2S_FMT_DATA_FORMAT_I2S;
   config.options = I2S_OPT_BIT_CLK_MASTER | I2S_OPT_FRAME_CLK_MASTER;
   config.frame_clk_freq = SAMPLE_FREQUENCY;
@@ -39,35 +36,29 @@ void audio_service_init() {
 
 void audio_sense_thread(void *arg1, void *arg2, void *arg3) {
   int ret;
-
   while (1) {
+    void *mem_block;
+    uint32_t size;
+
     ret = i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_START);
     if (ret < 0) {
       LOG_ERR("Failed to start I2S RX: %d \n", ret);
       return;
     }
 
-    for (int i = 0; i < BLOCK_COUNT; i++) {
-      ret = i2s_read(i2s_dev, &mem_block, &size);
-      if (ret < 0) {
-        LOG_ERR("Failed to read I2S Data: %d \n", ret);
-	/*Should we continue if we fail to read*/
-        continue;
-      }
-
+    ret = i2s_read(i2s_dev, &mem_block, &size);
+    if (ret == 0){
       int32_t *samples = mem_block;
-      printf("Block %d  first 10 samples: \n", i);
-      for (int j = 0; j < 10 && j < (size / 4); j++) {
-        LOG_WRN("%d ", samples[j]);
-      }
-
+      LOG_WRN("Block first sample: %d \n", samples[0]);
+    } else {
+      LOG_ERR("I2S Failed to read %d", ret);
     }
-  
-    i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_STOP);
 
-    LOG_WRN("I2S RX stopped\n");
+    // 3. Stop capture
+    i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_DROP);
+    LOG_WRN("Capture cycle complete");
 
-    /*Wait 2 seconds then sense again*/
-    k_sleep(K_SECONDS(2));	
+    // 4. Sleep before next cycle
+    k_sleep(K_SECONDS(2));
   }
 }
