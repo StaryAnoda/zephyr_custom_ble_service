@@ -49,14 +49,19 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3) {
     ret = i2s_read(i2s_dev, &mem_block, &size);
     if (ret == 0){
       int32_t *samples = mem_block;
-      LOG_WRN("Block first sample: %d \n", samples[0]);
+      LOG_WRN("Sample number 5 in Block Samples: %d", samples[5]);
+      k_mem_slab_free(&mem_slab, (void *)mem_block);
+
     } else {
       LOG_ERR("I2S Failed to read %d", ret);
     }
 
-    // 3. Stop capture
+    // 3. Stop capture, then drop any packes
+    i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_STOP); 
     i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_DROP);
-    LOG_WRN("Capture cycle complete");
+
+    LOG_WRN("Audio capture complete sleeping for 2 Seconds");
+
 
     // 4. Sleep before next cycle
     k_sleep(K_SECONDS(2));
