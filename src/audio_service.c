@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <zephyr/logging/log.h>
+#include <arm_math.h>
 
 #include "audio_service.h"
 
@@ -47,21 +49,26 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3) {
     }
 
     ret = i2s_read(i2s_dev, &mem_block, &size);
-    if (ret == 0){
-      int32_t *samples = mem_block;
-      LOG_WRN("Sample number 5 in Block Samples: %d", samples[5]);
-      k_mem_slab_free(&mem_slab, (void *)mem_block);
+    if (ret == 0) {
+      for(int b = 0; b < 3; b++) {
+	      q31_t rms_q31;
+	      int32_t *samples = mem_block;
+	      /*Compute the RMS of the signals in the block*/
+	      arm_rms_q31((q31_t *)samples, 4410, &rms_q31);
+	      float rms_float = (float)rms_q31 / 2147483648.0f;
+	      printf("Block %d RMS: %f \n", b, (double)rms_float);
+	      k_mem_slab_free(&mem_slab, (void *)mem_block);
+      }
 
     } else {
       LOG_ERR("I2S Failed to read %d", ret);
     }
 
     // 3. Stop capture, then drop any packes
-    i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_STOP); 
+    i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_STOP);
     i2s_trigger(i2s_dev, I2S_DIR_RX, I2S_TRIGGER_DROP);
 
     LOG_WRN("Audio capture complete sleeping for 2 Seconds");
-
 
     // 4. Sleep before next cycle
     k_sleep(K_SECONDS(2));
