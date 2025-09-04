@@ -16,6 +16,7 @@ Requirements
 
 * The NRF52840 Board
 * BLE Scanner APP
+* DF Robot I2S Microphone Module
 
 Building and Running
 ********************
