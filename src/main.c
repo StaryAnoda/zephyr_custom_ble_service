@@ -23,7 +23,9 @@ K_THREAD_DEFINE(ble_temp_thread_id, THREAD_STACK_SIZE, ble_temp_read_thread, NUL
 K_THREAD_DEFINE(audio_thread_id, THREAD_STACK_SIZE, audio_sense_thread, NULL, NULL, NULL, 4, 0, 0);
 K_THREAD_DEFINE(fsm_thread_id, THREAD_STACK_SIZE, fsm_run_thread, NULL, NULL, NULL, 3, 0 , 0);
 
-int main(void) {
+int main(void) { 
+   /*State Machine*/
+   fsm_init();
 
   /*Blocking bluetooth init*/
   ble_service_init();
