@@ -2,9 +2,16 @@
 #include <zephyr/smf.h>
 
 #include "fsm_service.h"
+#include "zephyr/kernel.h"
  
 LOG_MODULE_REGISTER(fsm_module); 
 
+
+/*App Gates*/
+K_SEM_DEFINE(temp_sense_gate, 0, 1); 
+K_SEM_DEFINE(mic_sense_gade, 0, 1); 
+
+/*End Gates*/
 
 static const struct smf_state ble_app_states[];
 
@@ -16,7 +23,7 @@ struct state_object {
 
 	/*Rest of the State Stuff*/
 	struct k_event smf_event; 
-	uint32_t events;
+	int32_t events;
 
 } state_object; 
 
@@ -109,8 +116,9 @@ void fsm_run_thread(void *arg1, void *arg2, void *arg3) {
 	smf_set_initial(SMF_CTX(&state_object),  &ble_app_states[IDLE]);
 	
 	while(1) {
-		state_object.events = k_event_wait(&state_object.smf_event, state_object.events, 
-				false, K_FOREVER);
+		state_object.events = k_event_wait(&state_object.smf_event, 
+				EVENT_CENTRAL_CONNECTED, 
+				false, K_SECONDS(10));
 
 		int ret = smf_run_state(SMF_CTX(&state_object));
 
@@ -120,6 +128,7 @@ void fsm_run_thread(void *arg1, void *arg2, void *arg3) {
 		}
 
 	}
+
 	
 }
 
