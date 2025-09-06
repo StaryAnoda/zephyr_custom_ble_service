@@ -3,10 +3,10 @@
 #include <zephyr/sys/util.h>
 
 /*List of App Events & Gates*/
-#define EVENT_CENTRAL_CONNECTED BIT(0)
-#define EVENT_TEMP_READ BIT(1)
-#define EVENT_AUDIO_DETECTED BIT(2)
-#define EVENT_ERROR_OCCURED BIT(3)
+#define EVENT_CENTRAL_CONNECTED    BIT(0)
+#define EVENT_TEMP_READ            BIT(1)
+#define EVENT_AUDIO_DETECTED       BIT(2)
+#define EVENT_ERROR_OCCURED        BIT(3)
 #define EVENT_CENTRAL_DISCONNECTED BIT(4)
 
 extern struct k_sem temp_sense_gate;
