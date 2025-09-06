@@ -5,14 +5,6 @@
  
 LOG_MODULE_REGISTER(fsm_module); 
 
-/*List of App Events*/
-
-#define EVENT_CENTRAL_CONNECTED BIT(0)
-#define EVENT_TEMP_READ 	BIT(1)
-#define EVENT_AUDIO_DETECTED 	BIT(2)
-#define EVENT_ERROR_OCCURED 	BIT(3)
-
-/*End List Events*/
 
 static const struct smf_state ble_app_states[];
 
@@ -24,7 +16,7 @@ struct state_object {
 
 	/*Rest of the State Stuff*/
 	struct k_event smf_event; 
-	int32_t events;
+	uint32_t events;
 
 } state_object; 
 
@@ -32,6 +24,9 @@ struct state_object {
 static void idle_entry(void *o)
 {
         LOG_WRN("Entered Idle");
+//	k_sem_reset(&audio_sense_gate); 
+//	k_sem_reset(&temp_sense_gate);
+
 }
 static enum smf_state_result idle_run(void *o)
 {
@@ -44,6 +39,10 @@ static void idle_exit(void *o)
 }
 
 //connected
+static void connected_entry(void *o) 
+{
+	/*Once connected open the sense gates*/
+}
 static enum smf_state_result connected_run(void *o)
 {
 	LOG_WRN("Connected state is being run");
@@ -95,7 +94,7 @@ static enum smf_state_result error_run(void *o)
 // make a state table
 static const struct smf_state ble_app_states[] = {
         [IDLE] = SMF_CREATE_STATE(idle_entry, idle_run, idle_exit, NULL, NULL),
-	[CONNECTED] = SMF_CREATE_STATE(NULL, connected_run, connected_exit, NULL, NULL),
+	[CONNECTED] = SMF_CREATE_STATE(connected_entry, connected_run, connected_exit, NULL, NULL),
         [TEMP_READ] = SMF_CREATE_STATE(temp_read_entry, temp_read_run, NULL, NULL, NULL),
 	[MIC_CAPTURE] = SMF_CREATE_STATE(mic_capture_entry, mic_capture_run, NULL, NULL, NULL),
 	[ERROR] = SMF_CREATE_STATE(error_entry, error_run, NULL, NULL, NULL),
@@ -108,14 +107,10 @@ void fsm_run_thread(void *arg1, void *arg2, void *arg3) {
 	k_event_init(&state_object.smf_event);
 
 	smf_set_initial(SMF_CTX(&state_object),  &ble_app_states[IDLE]);
-
-	k_sleep(K_SECONDS(2));
-
-	k_event_post(&state_object.smf_event, EVENT_CENTRAL_CONNECTED);
-
+	
 	while(1) {
-		state_object.events = k_event_wait(&state_object.smf_event, EVENT_CENTRAL_CONNECTED, 
-				true, K_MSEC(10));
+		state_object.events = k_event_wait(&state_object.smf_event, state_object.events, 
+				false, K_FOREVER);
 
 		int ret = smf_run_state(SMF_CTX(&state_object));
 
@@ -125,6 +120,7 @@ void fsm_run_thread(void *arg1, void *arg2, void *arg3) {
 		}
 
 	}
+	
 }
 
 

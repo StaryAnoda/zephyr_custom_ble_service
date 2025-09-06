@@ -39,6 +39,7 @@ void audio_service_init() {
 void audio_sense_thread(void *arg1, void *arg2, void *arg3) {
   int ret;
   while (1) {
+    /*Check the audio sense gate before working*/
     void *mem_block;
     uint32_t size;
 

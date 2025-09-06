@@ -49,7 +49,7 @@ double fetch_temp(const struct device *sensor) {
 void temp_sensor_thread(void *arg1 , void *arg2, void *arg3) 
 {
 	while(1) {
-		
+		/*Check the temp sense gate before running*/
 		float curr_temp = (float)fetch_temp(temp_sensor); 
 		curr_msg.value  = curr_temp;
 
