@@ -7,8 +7,10 @@ LOG_MODULE_REGISTER(ble_module);
 
 #include "app.h"
 #include "ble_service.h"
+#include "fsm_service.h"
 
 
+extern struct state_object state_object;
 extern struct k_msgq tempmsgq;
 
 volatile bool ble_ready = false;
@@ -71,6 +73,7 @@ static void connected(struct bt_conn *conn, uint8_t err) {
 	}
 	LOG_WRN("Connection estalished!"); 
 	/* Post an Event to FSM to show connected*/
+	fsm_post_event(EVENT_CENTRAL_CONNECTED);
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t err) {
@@ -80,6 +83,7 @@ static void disconnected(struct bt_conn *conn, uint8_t err) {
 	}
 	LOG_WRN("Disconnection finished");
 	/*Post an event to the FSM that we are disconnected*/
+	fsm_post_event(EVENT_CENTRAL_DISCONNECTED);
 }
 
 static struct bt_conn_cb our_callbacks = {
