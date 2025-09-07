@@ -8,7 +8,7 @@ LOG_MODULE_REGISTER(fsm_module);
 
 /*App Gates*/
 K_SEM_DEFINE(temp_sense_gate, 0, 1);
-K_SEM_DEFINE(mic_sense_gade, 0, 1);
+K_SEM_DEFINE(mic_sense_gate, 0, 1);
 
 /*End Gates*/
 
@@ -36,8 +36,8 @@ struct state_object {
 static void idle_entry(void *o)
 {
 	LOG_WRN("Entered Idle");
-	//	k_sem_reset(&audio_sense_gate);
-	//	k_sem_reset(&temp_sense_gate);
+	k_sem_reset(&mic_sense_gate);
+	k_sem_reset(&temp_sense_gate);
 }
 static enum smf_state_result idle_run(void *o)
 {
@@ -57,7 +57,12 @@ static void idle_exit(void *o)
 
 // connected
 static void connected_entry(void *o)
-{ /*Once connected open the sense gates*/
+{
+	LOG_WRN("Entering Connected state");
+	/*Once connected open the sense gates*/
+	k_sem_give(&mic_sense_gate);
+	k_sem_give(&temp_sense_gate);
+
 }
 
 static enum smf_state_result connected_run(void *o)
