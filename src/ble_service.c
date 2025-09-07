@@ -70,6 +70,8 @@ static struct bt_le_adv_param lp_adv_params = {
 	.interval_max = 2000,
 };
 
+static struct bt_conn *default_conn;
+
 /* COnnection Callbacks*/
 static void connected(struct bt_conn *conn, uint8_t err)
 {
@@ -80,24 +82,22 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	LOG_WRN("Connection estalished!");
 	/* Post an Event to FSM to show connected*/
 	fsm_post_event(EVENT_CENTRAL_CONNECTED);
+
+	default_conn = bt_conn_ref(conn);
 }
 
-static void disconnected(struct bt_conn *conn, uint8_t err)
+static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	if (err != 0) {
-		LOG_ERR("Error occured when disconnecting (%d)", err);
-		/*do a clean disconnect?*/
-		bt_conn_disconnect(conn, err);
-	}
-	LOG_WRN("Disconnection finished");
-	/*Post an event to the FSM that we are disconnected*/
-	fsm_post_event(EVENT_CENTRAL_DISCONNECTED);
+	LOG_ERR("Disconnected with reason: (0x%02x)", reason);
 
-	/*prepare for the next connection*/
-	err = bt_le_adv_start(&lp_adv_params, advert, ARRAY_SIZE(advert), NULL, 0);
-	if (err) {
-		LOG_ERR("advertising failed to start 0x%02x", err);
+	/*release reference*/
+	if (default_conn) {
+		bt_conn_unref(default_conn);
+		default_conn = NULL;
 	}
+
+	/*Post an event to the FSM that we are disconnected*/
+	fsm_post_event(EVENT_CENTRAL_DISCONNECTED);	
 }
 
 static struct bt_conn_cb our_callbacks = {
