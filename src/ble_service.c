@@ -100,9 +100,25 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	fsm_post_event(EVENT_CENTRAL_DISCONNECTED);	
 }
 
+static void advertising_start(void)
+{
+	int err;
+
+	/*When ready register callbacks to handle connections and notifications*/
+	err = bt_le_adv_start(&lp_adv_params, advert, ARRAY_SIZE(advert), NULL, 0);
+	if (err) {
+		LOG_ERR("advertising failed to start 0x%02x", err);
+	}
+}
+static void on_recycled(void)
+{
+	advertising_start();
+}
+
 static struct bt_conn_cb our_callbacks = {
 	.connected = connected,
 	.disconnected = disconnected,
+	.recycled = on_recycled,
 };
 
 void ble_service_init(void)
@@ -123,11 +139,7 @@ void ble_service_init(void)
 		/* how to handle failure*/
 	}
 
-	/*When ready register callbacks to handle connections and notifications*/
-	err = bt_le_adv_start(&lp_adv_params, advert, ARRAY_SIZE(advert), NULL, 0);
-	if (err) {
-		LOG_ERR("advertising failed to start 0x%02x", err);
-	}
+	advertising_start();
 }
 
 /*BLE Threads*/
