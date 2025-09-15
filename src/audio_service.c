@@ -89,7 +89,8 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3)
 				ret = k_mem_slab_alloc(&inference_slab, (void **)&infer_block,
 						       K_NO_WAIT);
 				if (ret == 0) {
-					memcpy(&infer_block, mem_block, size);
+					memset(infer_block, 0, size); 
+					memcpy(infer_block, mem_block, size);
 					k_mem_slab_free(&mem_slab, (void *)mem_block);
 				} else {
 					LOG_ERR("Could not allocate Infer block (%d)", ret);
