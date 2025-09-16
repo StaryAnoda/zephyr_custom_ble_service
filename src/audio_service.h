@@ -23,6 +23,8 @@
 /*Filter  Definitions*/
 #define NUM_TAPS			53
 
+extern struct k_mem_slab inference_slab;
+extern struct k_fifo infer_fifo; 
 
 void audio_service_init();
 void audio_sense_thread(void *arg1, void *arg2, void *arg3);

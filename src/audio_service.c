@@ -7,7 +7,14 @@
 LOG_MODULE_REGISTER(audio_module);
 
 K_MEM_SLAB_DEFINE_STATIC(mem_slab, BLOCK_SIZE, BLOCK_COUNT, 4);
-K_MEM_SLAB_DEFINE_STATIC(inference_slab, BLOCK_SIZE, BLOCK_COUNT, 4);
+K_MEM_SLAB_DEFINE(inference_slab, BLOCK_SIZE, BLOCK_COUNT, 4);
+K_FIFO_DEFINE(infer_fifo);
+
+/*FIFO data item*/
+struct infer_block_add {
+	void *fifo_reserved; 
+	void *iblock;
+};
 
 static const struct device *i2s_dev;
 
@@ -71,6 +78,11 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3)
 		/*Wait on a semaphore*/
 		k_sem_take(&mic_sense_gate, K_FOREVER);
 
+		/* Post an Event to FSM to show MIC capturing*/
+		fsm_post_event(EVENT_AUD_SENSE_STARTED);
+
+
+
 		/*Check the audio sense gate before working*/
 		void *mem_block;
 		void *infer_block;
@@ -91,6 +103,7 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3)
 				if (ret == 0) {
 					memset(infer_block, 0, size); 
 					memcpy(infer_block, mem_block, size);
+					k_fifo_put(&infer_fifo, &infer_block);
 					k_mem_slab_free(&mem_slab, (void *)mem_block);
 				} else {
 					LOG_ERR("Could not allocate Infer block (%d)", ret);
@@ -108,6 +121,7 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3)
 		// 4. Sleep before next cycle
 		k_sem_give(&mic_sense_gate);
 		//SEND A STATE EVENT TO TRIGGER FILTERING
+		fsm_post_event(EVENT_AUD_SENSE_END);
 		k_sleep(K_SECONDS(2));
 	}
 }
