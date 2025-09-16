@@ -15,7 +15,7 @@ static float32_t fir_state[SAMPLES_PER_BLOCK + NUM_TAPS - 1];
 float32_t samples_f[SAMPLES_PER_BLOCK];
 float32_t filtered_samples[SAMPLES_PER_BLOCK];
 
-const float32_t filter_taps[53] = {
+const float32_t filter_taps[NUM_TAPS] = {
 	0.000000008f,         -0.000000017f,        -0.000005158008031f,  0.000001306510464f,
 	0.000133311671510f,   0.000441338085554f,   -0.000003558565317f,  -0.004678776861470f,
 	-0.019949989253140f,  -0.050762976431733f,  -0.089992776291018f,  -0.106658945543195f,
@@ -107,6 +107,7 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3)
 
 		// 4. Sleep before next cycle
 		k_sem_give(&mic_sense_gate);
+		//SEND A STATE EVENT TO TRIGGER FILTERING
 		k_sleep(K_SECONDS(2));
 	}
 }
