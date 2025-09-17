@@ -8,7 +8,7 @@ extern "C" {
 
 void ble_service_init(void);
 
-extern float temp_float;
+extern int16_t temp_celsius_x100;
 
 // call back function that reads the value we need to expose
 ssize_t read_custom_characteristic(struct bt_conn *conn,

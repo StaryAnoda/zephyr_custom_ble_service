@@ -1,4 +1,5 @@
 #include <zephyr/logging/log.h> 
+#include <zephyr/kernel.h>
 
 #include "inference_service.h"
 #include "fsm_service.h"

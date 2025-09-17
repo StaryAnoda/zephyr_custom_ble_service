@@ -1,5 +1,6 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/smf.h>
+#include <zephyr/kernel.h>
 
 #include "fsm_service.h"
 #include "zephyr/kernel.h"
@@ -41,7 +42,7 @@ static void idle_entry(void *o)
 	k_sem_reset(&mic_sense_gate);
 	k_sem_reset(&temp_sense_gate);
 }
-static enum smf_state_result idle_run(void *o)
+static void idle_run(void *o)
 {
 	struct state_object *so = o;
 
@@ -50,7 +51,6 @@ static enum smf_state_result idle_run(void *o)
 		LOG_WRN("Go to connected State");
 		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[CONNECTED]);
 	}
-	return SMF_EVENT_HANDLED;
 }
 static void idle_exit(void *o)
 {
@@ -67,7 +67,7 @@ static void connected_entry(void *o)
 
 }
 
-static enum smf_state_result connected_run(void *o)
+static void connected_run(void *o)
 {
 	struct state_object *so = o;
 	if (so->events & EVENT_CENTRAL_DISCONNECTED) {
@@ -77,7 +77,6 @@ static enum smf_state_result connected_run(void *o)
 		LOG_WRN("Go to MIC Capture State");
 		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[MIC_CAPTURE]);
 	}
-	return SMF_EVENT_HANDLED;
 }
 
 static void connected_exit(void *o)
@@ -91,10 +90,9 @@ static void temp_read_entry(void *o)
 {
 	LOG_WRN("Entered Temp_Read");
 }
-static enum smf_state_result temp_read_run(void *o)
+static void temp_read_run(void *o)
 {
 	smf_set_state(SMF_CTX(&state_object), &ble_app_states[TEMP_READ]);
-	return SMF_EVENT_HANDLED;
 }
 
 // mic capture
@@ -103,7 +101,7 @@ static void mic_capture_entry(void *o)
 	LOG_WRN("Entered MIC_CAPTURE"); 
 	k_sem_take(&inference_gate, K_NO_WAIT);
 }
-static enum smf_state_result mic_capture_run(void *o)
+static void mic_capture_run(void *o)
 {
 
 	struct state_object *so = o;
@@ -111,7 +109,6 @@ static enum smf_state_result mic_capture_run(void *o)
 		LOG_WRN("Go to Infering State");
 		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[INFERING]);
 	}
-	return SMF_EVENT_HANDLED;
 }
 
 static void mic_capture_exit(void *o)
@@ -128,10 +125,9 @@ static void infering_entry(void *o)
 	LOG_WRN("Entered INFERING");
 	k_sem_take(&mic_sense_gate, K_NO_WAIT);
 }
-static enum smf_state_result infering_run(void *o)
+static void infering_run(void *o)
 {
 	smf_set_state(SMF_CTX(&state_object), &ble_app_states[INFERING]);
-	return SMF_EVENT_HANDLED;
 }
 static void infering_exit(void *o)
 {
@@ -149,12 +145,11 @@ static void error_entry(void *o)
 {
 	LOG_WRN("Entered Error");
 }
-static enum smf_state_result error_run(void *o)
+static void error_run(void *o)
 {
 	// Do computation here to determine if you want to be here or not
 	// or cause some side effect
 	smf_set_state(SMF_CTX(&state_object), &ble_app_states[ERROR]);
-	return SMF_EVENT_HANDLED;
 }
 
 // make a state table
