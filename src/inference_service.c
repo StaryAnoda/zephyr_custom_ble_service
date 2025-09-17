@@ -1,4 +1,5 @@
 #include <zephyr/logging/log.h> 
+#include <zephyr/kernel.h>
 #include <arm_math.h>
 
 #include "dsp/transform_functions.h"

@@ -17,7 +17,7 @@ static const struct device *temp_sensor;
 
 void sensor_temp_sensor_init()
 {
-	temp_sensor = DEVICE_DT_GET_ANY(nordic_nrf_temp);
+	temp_sensor = DEVICE_DT_GET_ANY(sensirion_sht4x);
 
 	if (!temp_sensor || !device_is_ready(temp_sensor)) {
 		LOG_ERR("Device (%s) is not ready", temp_sensor->name);
@@ -36,7 +36,7 @@ double fetch_temp(const struct device *sensor)
 	}
 
 	if (rc == 0U) {
-		rc = sensor_channel_get(sensor, SENSOR_CHAN_DIE_TEMP, &temp);
+		rc = sensor_channel_get(sensor, SENSOR_CHAN_AMBIENT_TEMP, &temp);
 	}
 
 	if (rc != 0U) {

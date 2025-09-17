@@ -13,7 +13,7 @@ extern struct state_object state_object;
 extern struct k_msgq tempmsgq;
 
 volatile bool ble_ready = false;
-float temp_float;
+int16_t temp_celsius_x100;
 
 /* Error checking function to make sure ble runs well.
  * Enables us to report on Bluetooth
@@ -45,22 +45,30 @@ static const struct bt_data advert[] = {
  * assign permissions
  * point to function to read
  */
-BT_GATT_SERVICE_DEFINE(enviromental_sensing, BT_GATT_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0x181A)),
-		       BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_16(0x2A6E),
-					      BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
-					      BT_GATT_PERM_READ, read_custom_characteristic, NULL,
-					      &temp_float));
+BT_GATT_SERVICE_DEFINE(enviromental_sensing,
+    BT_GATT_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0x181A)),
+    BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_16(0x2A6E),
+        BT_GATT_CHRC_READ,
+        BT_GATT_PERM_READ,
+        read_custom_characteristic,
+        NULL,
+        &temp_celsius_x100)
+);
 
 /* function to read characteristic
  * needs to be type defined as follows
  * this function is read in the rx thread and is blocking so use it like an ISR
  */
-ssize_t read_custom_characteristic(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf,
-				   uint16_t len, uint16_t offset)
+ssize_t read_custom_characteristic(struct bt_conn *conn,
+                                   const struct bt_gatt_attr *attr,
+                                   void *buf,
+                                   uint16_t len,
+                                   uint16_t offset)
 {
 	LOG_WRN("Temp was read by Central\n");
-	float *value = attr->user_data;
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(*value));
+    int16_t *value = attr->user_data;
+
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(*value));
 }
 
 /*Low Power advertising params*/
@@ -150,7 +158,7 @@ void ble_temp_read_thread(void *arg1, void *arg2, void *arg3)
 	while (1) {
 		/*Try to read the queue until it has something*/
 		if (k_msgq_get(&tempmsgq, &curr_msg, K_FOREVER) == 0) {
-			temp_float = curr_msg.value;
+			temp_celsius_x100 = (int16_t)(curr_msg.value * 100.0f);
 		}
 
 		// Wait 10s

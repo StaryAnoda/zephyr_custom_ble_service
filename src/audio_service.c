@@ -1,4 +1,6 @@
 #include <zephyr/logging/log.h>
+#include <zephyr/kernel.h>
+#include <arm_math.h>
 
 #include "audio_service.h"
 #include "fsm_service.h"
