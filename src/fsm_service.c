@@ -130,7 +130,11 @@ static void infering_entry(void *o)
 }
 static enum smf_state_result infering_run(void *o)
 {
-	smf_set_state(SMF_CTX(&state_object), &ble_app_states[INFERING]);
+	struct state_object *so = o;
+	if (so->events & EVENT_INFERENCE_END) {
+		LOG_WRN("Go to Connected State");
+		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[CONNECTED]);
+	}
 	return SMF_EVENT_HANDLED;
 }
 static void infering_exit(void *o)
