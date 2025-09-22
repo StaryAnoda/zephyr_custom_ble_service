@@ -103,7 +103,7 @@ void audio_sense_thread(void *arg1, void *arg2, void *arg3)
 				if (ret == 0) {
 					memset(infer_block, 0, size); 
 					memcpy(infer_block, mem_block, size);
-					k_fifo_put(&infer_fifo, &infer_block);
+					k_fifo_put(&infer_fifo, infer_block);
 					k_mem_slab_free(&mem_slab, (void *)mem_block);
 				} else {
 					LOG_ERR("Could not allocate Infer block (%d)", ret);

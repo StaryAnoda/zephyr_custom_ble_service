@@ -58,6 +58,7 @@ void inference_thread_run(void *arg1, void *arg2,  void *arg3) {
 
 				End Filter apply*/
 		k_sem_give(&inference_gate);
+		fsm_post_event(EVENT_INFERENCE_END);
 		k_sleep(K_SECONDS(4)); 
 	}
 }
