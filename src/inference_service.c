@@ -1,6 +1,7 @@
 #include <zephyr/logging/log.h> 
 #include <arm_math.h>
 
+#include "dsp/transform_functions.h"
 #include "inference_service.h"
 #include "fsm_service.h"
 #include "audio_service.h"
@@ -9,6 +10,7 @@ LOG_MODULE_REGISTER(inference_module);
 
 static float32_t fir_state[SAMPLES_PER_BLOCK + NUM_TAPS - 1];
 float32_t samples_f[SAMPLES_PER_BLOCK];
+float32_t fft_samples[SAMPLES_PER_BLOCK];
 float32_t filtered_samples[SAMPLES_PER_BLOCK];
 
 const float32_t filter_taps[NUM_TAPS] = {
@@ -34,14 +36,11 @@ void inference_init() {
 }
 
 void inference_thread_run(void *arg1, void *arg2,  void *arg3) {
-	arm_fir_instance_f32 FIR;
-
-	arm_fir_init_f32(&FIR, NUM_TAPS, (float32_t *)&filter_taps[0], &fir_state[0],
-			 SAMPLES_PER_BLOCK);
-
+	arm_rfft_fast_instance_f32 FFT_INST;
+	int fft_flag = 0;
+	arm_rfft_fast_init_4096_f32(&FFT_INST);
 
 	while(1) {
-		//TODO prevent race with audio service using FSM
 		k_sem_take(&inference_gate, K_FOREVER);
 		LOG_WRN("Inference has been run");
 
@@ -59,15 +58,14 @@ void inference_thread_run(void *arg1, void *arg2,  void *arg3) {
 				int32_t  sam = samples[f] >> 8; 
 				samples_f[f] = (float32_t)sam / 8388608.0f;
 			}
-			//2.fiter samples 
-			arm_fir_f32(&FIR, samples_f, filtered_samples, SAMPLES_PER_BLOCK);
+			//2. Compute FFT of samples 
+			arm_rfft_fast_f32(&FFT_INST, samples_f, fft_samples, fft_flag); 
 
 			for(int f = 0; f < 100; f++)
 			{
-				LOG_ERR("Filtered Sample %d: %f", f, 
+				LOG_ERR("FFT Sample %d: %f", f, 
 						(double)filtered_samples[f]);
 			}
-			//3.do a power measurement 
 			// 4. Free each block
 			k_mem_slab_free(&inference_slab, (void *)rx_block);
 
