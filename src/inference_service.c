@@ -38,7 +38,8 @@ void inference_init() {
 void inference_thread_run(void *arg1, void *arg2,  void *arg3) {
 	arm_rfft_fast_instance_f32 FFT_INST;
 	int fft_flag = 0;
-	arm_rfft_fast_init_4096_f32(&FFT_INST);
+	arm_status fft_s = arm_rfft_fast_init_4096_f32(&FFT_INST);
+	LOG_WRN("FFT Init status  %d", fft_s);
 
 	while(1) {
 		k_sem_take(&inference_gate, K_FOREVER);
@@ -56,16 +57,19 @@ void inference_thread_run(void *arg1, void *arg2,  void *arg3) {
 			{
 				// convert to float32
 				int32_t  sam = samples[f] >> 8; 
-				samples_f[f] = (float32_t)sam / 8388608.0f;
+				float32_t f_sample = (float32_t)sam / 8388608.0f;
+				samples_f[f] = f_sample;
 			}
 			//2. Compute FFT of samples 
 			arm_rfft_fast_f32(&FFT_INST, samples_f, fft_samples, fft_flag); 
 
+			
 			for(int f = 0; f < 100; f++)
 			{
 				LOG_ERR("FFT Sample %d: %f", f, 
-						(double)filtered_samples[f]);
+						(double)fft_samples[f]);
 			}
+			
 			// 4. Free each block
 			k_mem_slab_free(&inference_slab, (void *)rx_block);
 
