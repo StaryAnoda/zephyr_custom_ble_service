@@ -64,7 +64,7 @@ void inference_thread_run(void *arg1, void *arg2,  void *arg3) {
 			arm_rfft_fast_f32(&FFT_INST, samples_f, fft_samples, fft_flag); 
 
 			
-			for(int f = 0; f < 100; f++)
+			for(int f = 0; f < 1; f++)
 			{
 				LOG_ERR("FFT Sample %d: %f", f, 
 						(double)fft_samples[f]);

@@ -17,15 +17,14 @@ static const struct smf_state ble_app_states[];
 
 enum ble_app_state {
 	IDLE,
-	CONNECTED,
-	TEMP_READ,
+	CONNECTED_PARENT,
 	MIC_CAPTURE,
 	INFERING,
 	ERROR
 };
 
 struct state_object {
-	/*Must be first for  casting*/
+	/*Must be first for casting*/
 	struct smf_ctx state_context;
 
 	/*Rest of the State Stuff*/
@@ -40,6 +39,7 @@ static void idle_entry(void *o)
 	LOG_WRN("Entered Idle");
 	k_sem_reset(&mic_sense_gate);
 	k_sem_reset(&temp_sense_gate);
+    k_sem_reset(&inference_gate);
 }
 static enum smf_state_result idle_run(void *o)
 {
@@ -47,8 +47,8 @@ static enum smf_state_result idle_run(void *o)
 
 	/*Wait for connect*/
 	if (so->events & EVENT_CENTRAL_CONNECTED) {
-		LOG_WRN("Go to connected State");
-		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[CONNECTED]);
+		LOG_WRN("Go to Connected Parent State");
+		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[CONNECTED_PARENT]);
 	}
 	return SMF_EVENT_HANDLED;
 }
@@ -57,21 +57,22 @@ static void idle_exit(void *o)
 	LOG_WRN("Left Idle");
 }
 
-// connected
-static void connected_entry(void *o)
+// connected parent
+static void connected_parent_entry(void *o)
 {
-	LOG_WRN("Entering Connected state");
+	LOG_WRN("Entering Connected Parent state");
 	/*Once connected open the sense gates*/
 	k_sem_give(&mic_sense_gate);
 	k_sem_give(&temp_sense_gate);
+	// k_sem_give(&inference_gate);
 
 }
 
-static enum smf_state_result connected_run(void *o)
+static enum smf_state_result connected_parent_run(void *o)
 {
 	struct state_object *so = o;
 	if (so->events & EVENT_CENTRAL_DISCONNECTED) {
-		LOG_WRN("Go to connected State");
+		LOG_WRN("Go to idle State");
 		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[IDLE]);
 	} else if (so->events & EVENT_AUD_SENSE_STARTED) {
 		LOG_WRN("Go to MIC Capture State");
@@ -80,21 +81,9 @@ static enum smf_state_result connected_run(void *o)
 	return SMF_EVENT_HANDLED;
 }
 
-static void connected_exit(void *o)
+static void connected_parent_exit(void *o)
 {
-	LOG_WRN("Left Connnected");
-}
-
-// temp  read
-
-static void temp_read_entry(void *o)
-{
-	LOG_WRN("Entered Temp_Read");
-}
-static enum smf_state_result temp_read_run(void *o)
-{
-	smf_set_state(SMF_CTX(&state_object), &ble_app_states[TEMP_READ]);
-	return SMF_EVENT_HANDLED;
+	LOG_WRN("Left Connected Parent state");
 }
 
 // mic capture
@@ -105,24 +94,23 @@ static void mic_capture_entry(void *o)
 }
 static enum smf_state_result mic_capture_run(void *o)
 {
-
 	struct state_object *so = o;
-	if (so->events & EVENT_AUD_SENSE_END) {
+	if (so->events & EVENT_CENTRAL_DISCONNECTED) {
+		LOG_WRN("Go back to Idle State");
+		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[IDLE]);
+	} else if (so->events & EVENT_AUD_SENSE_END) {
 		LOG_WRN("Go to Infering State");
 		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[INFERING]);
 	}
 	return SMF_EVENT_HANDLED;
 }
-
 static void mic_capture_exit(void *o)
 {
 	LOG_WRN("Left MIC Capture");
 	k_sem_give(&inference_gate);
-	
 }
 
-
-
+// infering
 static void infering_entry(void *o)
 {
 	LOG_WRN("Entered INFERING");
@@ -131,9 +119,12 @@ static void infering_entry(void *o)
 static enum smf_state_result infering_run(void *o)
 {
 	struct state_object *so = o;
-	if (so->events & EVENT_INFERENCE_END) {
-		LOG_WRN("Go to Connected State");
-		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[CONNECTED]);
+	if (so->events & EVENT_CENTRAL_DISCONNECTED) {
+		LOG_WRN("Go back to Idle State");
+		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[IDLE]);
+	} else if (so->events & EVENT_INFERENCE_END) {
+		LOG_WRN("Go to Connected Parent State");
+		smf_set_state(SMF_CTX(&so->state_context), &ble_app_states[CONNECTED_PARENT]);
 	}
 	return SMF_EVENT_HANDLED;
 }
@@ -143,12 +134,7 @@ static void infering_exit(void *o)
 	k_sem_give(&mic_sense_gate);
 }
 
-
-
-
-
 // error state
-
 static void error_entry(void *o)
 {
 	LOG_WRN("Entered Error");
@@ -163,12 +149,11 @@ static enum smf_state_result error_run(void *o)
 
 // make a state table
 static const struct smf_state ble_app_states[] = {
-	[IDLE] = SMF_CREATE_STATE(idle_entry, idle_run, idle_exit, NULL, NULL),
-	[CONNECTED] = SMF_CREATE_STATE(connected_entry, connected_run, connected_exit, NULL, NULL),
-	[TEMP_READ] = SMF_CREATE_STATE(temp_read_entry, temp_read_run, NULL, NULL, NULL),
-	[MIC_CAPTURE] = SMF_CREATE_STATE(mic_capture_entry, mic_capture_run, mic_capture_exit, NULL, NULL),
-	[INFERING] = SMF_CREATE_STATE(infering_entry, infering_run, infering_exit, NULL, NULL),
-	[ERROR] = SMF_CREATE_STATE(error_entry, error_run, NULL, NULL, NULL),
+	[IDLE]            = SMF_CREATE_STATE(idle_entry, idle_run, idle_exit, NULL, NULL),
+	[CONNECTED_PARENT]= SMF_CREATE_STATE(connected_parent_entry, connected_parent_run, connected_parent_exit, NULL, NULL),
+	[MIC_CAPTURE]     = SMF_CREATE_STATE(mic_capture_entry, mic_capture_run, mic_capture_exit, &ble_app_states[CONNECTED_PARENT], NULL),
+	[INFERING]        = SMF_CREATE_STATE(infering_entry, infering_run, infering_exit, &ble_app_states[CONNECTED_PARENT], NULL),
+	[ERROR]           = SMF_CREATE_STATE(error_entry, error_run, NULL, NULL, NULL),
 };
 
 struct fsm_event {
